@@ -54,6 +54,7 @@ fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
             "Message is too long to fit in the image. Maximum message length is {} bytes, including the null byte",
             max_bytes
         );
+        return;
     }
 
     // Convert the message to a vector of bits
