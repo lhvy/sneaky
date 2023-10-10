@@ -4,11 +4,6 @@ fn main() {
     // Input a message using Inquire
     let message = inquire::Text::new("Enter a message").prompt().unwrap();
 
-    // Convert the message to a vector of bytes
-    let mut message = message.as_bytes().to_vec();
-    // Add a null byte to the end of the message to signify the end of the message.
-    message.push(0);
-
     // Input an image using Inquire
     let image_path = inquire::Text::new("Enter an image path")
         .with_validator(|a: &str| {
@@ -23,8 +18,7 @@ fn main() {
         .prompt()
         .unwrap();
 
-    let image = image::open(image_path).unwrap();
-    let mut image = image.to_rgb8();
+    let image = image::open(image_path).unwrap().to_rgb8();
 
     // How many bits to use for the message, 1-8
     let n_bits = inquire::Text::new("How many bits to use for LSB?")
@@ -42,15 +36,24 @@ fn main() {
         .parse::<u8>()
         .unwrap();
 
+    lsb_encode(message, image, n_bits);
+
+    lsb_decode(n_bits);
+}
+
+fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
+    // Convert the message to a vector of bytes
+    let mut message = message.as_bytes().to_vec();
+    // Add a null byte to the end of the message to signify the end of the message.
+    message.push(0);
+
     // Ensure that the message will fit in the image
-    // Calculate the maximum number of bytes that can be stored in the image
     let max_bytes = (image.width() * image.height() * 3) / (8 / n_bits) as u32;
     if message.len() > max_bytes as usize {
         println!(
             "Message is too long to fit in the image. Maximum message length is {} bytes, including the null byte",
             max_bytes
         );
-        return;
     }
 
     // Convert the message to a vector of bits
@@ -67,6 +70,10 @@ fn main() {
         for x in 0..image.width() {
             let pixel = image.get_pixel_mut(x, y);
             for j in 0..3 {
+                if i == message_bits.len() {
+                    break;
+                }
+
                 // Extract n_bits from the message
                 let mut byte = 0;
                 for _ in 0..n_bits {
@@ -84,10 +91,11 @@ fn main() {
         }
     }
 
+    // Save the image
     image.save("out.png").unwrap();
+}
 
-    println!("Done!");
-
+fn lsb_decode(n_bits: u8) {
     let image = image::open("out.png").unwrap().to_rgb8();
 
     // Decode the message from the image
