@@ -1,3 +1,5 @@
+mod cipher;
+
 use std::path::Path;
 
 fn main() {
@@ -15,10 +17,24 @@ fn main() {
 
 fn encode() {
     let message = inquire::Text::new("Enter a message").prompt().unwrap();
-    let image_path = get_path();
-    let image = image::open(image_path).unwrap().to_rgb8();
-    let n_bits = get_bits();
-    lsb_encode(message, image, n_bits);
+
+    let options = vec!["Encode using LSB in an image", "Encode using a ROT cipher"];
+    let choice = inquire::Select::new("Select an option", options)
+        .prompt()
+        .unwrap();
+
+    match choice {
+        "Encode using LSB in an image" => {
+            let image_path = get_path();
+            let image = image::open(image_path).unwrap().to_rgb8();
+            let n_bits = get_bits();
+            lsb_encode(message, image, n_bits);
+        }
+        "Encode using a ROT cipher" => {
+            // let rotation = inquire::Text::new("Enter a rotation");
+        }
+        _ => panic!("Invalid option"),
+    }
 }
 
 fn decode() {
