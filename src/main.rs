@@ -1,25 +1,34 @@
 use std::path::Path;
 
 fn main() {
-    // Input a message using Inquire
-    let message = inquire::Text::new("Enter a message").prompt().unwrap();
-
-    // Input an image using Inquire
-    let image_path = inquire::Text::new("Enter an image path")
-        .with_validator(|a: &str| {
-            if !Path::new(a).exists() {
-                return Ok(inquire::validator::Validation::Invalid(
-                    "File does not exist".into(),
-                ));
-            } else {
-                return Ok(inquire::validator::Validation::Valid);
-            }
-        })
+    let options = vec!["Encode a message", "Decode a message"];
+    let choice = inquire::Select::new("Select an option", options)
         .prompt()
         .unwrap();
 
-    let image = image::open(image_path).unwrap().to_rgb8();
+    match choice {
+        "Encode a message" => encode(),
+        "Decode a message" => decode(),
+        _ => panic!("Invalid option"),
+    }
+}
 
+fn encode() {
+    let message = inquire::Text::new("Enter a message").prompt().unwrap();
+    let image_path = get_path();
+    let image = image::open(image_path).unwrap().to_rgb8();
+    let n_bits = get_bits();
+    lsb_encode(message, image, n_bits);
+}
+
+fn decode() {
+    let image_path = get_path();
+    let image = image::open(image_path).unwrap().to_rgb8();
+    let n_bits = get_bits();
+    lsb_decode(image, n_bits);
+}
+
+fn get_bits() -> u8 {
     // How many bits to use for the message, 1-8
     let n_bits = inquire::Text::new("How many bits to use for LSB?")
         .with_validator(|a: &str| {
@@ -36,9 +45,25 @@ fn main() {
         .parse::<u8>()
         .unwrap();
 
-    lsb_encode(message, image, n_bits);
+    n_bits
+}
 
-    lsb_decode(n_bits);
+fn get_path() -> String {
+    let image_path = inquire::Text::new("Enter an image path")
+        .with_validator(|mut a: &str| {
+            a = a.trim();
+            if !Path::new(a).exists() {
+                return Ok(inquire::validator::Validation::Invalid(
+                    "File does not exist".into(),
+                ));
+            } else {
+                return Ok(inquire::validator::Validation::Valid);
+            }
+        })
+        .prompt()
+        .unwrap();
+
+    image_path.trim().to_string()
 }
 
 fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
@@ -94,11 +119,10 @@ fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
 
     // Save the image
     image.save("out.png").unwrap();
+    println!("Saved image to ./out.png");
 }
 
-fn lsb_decode(n_bits: u8) {
-    let image = image::open("out.png").unwrap().to_rgb8();
-
+fn lsb_decode(image: image::RgbImage, n_bits: u8) {
     // Decode the message from the image
     let mut message = Vec::new();
     let mut byte = 0;
