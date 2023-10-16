@@ -66,8 +66,7 @@ fn decode() {
 
     match choice {
         "Decode using LSB in an image" => {
-            let image_path = get_path();
-            let image = image::open(image_path).unwrap().to_rgb8();
+            let image = image::load_from_memory(&bytes).unwrap().to_rgb8();
             let n_bits = get_bits();
             lsb_decode(image, n_bits);
         }
@@ -148,38 +147,36 @@ fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
         return;
     }
 
-    // Write the message to the image
-    let mut i = 0;
-    for y in 0..image.height() {
-        for x in 0..image.width() {
-            let pixel = image.get_pixel_mut(x, y);
-            for j in 0..3 {
-                if i >= message.len() * 8 {
-                    break;
-                }
-
-                // Extract n_bits from the message
-                let mut byte = 0;
-                for k in (0..n_bits).rev() {
-                    if i >= message.len() * 8 {
-                        break;
-                    }
-                    let byte_index = i / 8;
-                    let offset = i % 8;
-                    let msg_bit = (message[byte_index] >> (7 - offset)) & 1;
-                    byte |= msg_bit << k;
-                    i += 1;
-                }
-
-                // Write the bits to the image
-                pixel[j] = (pixel[j] & (0xFF << n_bits)) | byte;
-            }
-        }
-    }
+    lsb_raw_encode(&message, image.as_flat_samples_mut().as_mut_slice(), n_bits);
 
     // Save the image
     image.save("out.png").unwrap();
     println!("Saved image to ./out.png");
+}
+
+fn lsb_raw_encode(payload: &[u8], carrier: &mut [u8], n_bits: u8) {
+    let mut input_bits_index: usize = 0;
+    for carrier_byte in carrier {
+        if input_bits_index >= payload.len() * 8 {
+            break;
+        }
+
+        // Extract n_bits from the carrier byte
+        let mut payload_bits = 0;
+        for k in (0..n_bits).rev() {
+            if input_bits_index >= payload.len() * 8 {
+                break;
+            }
+            let byte_index = input_bits_index / 8;
+            let offset = input_bits_index % 8;
+            let msg_bit = (payload[byte_index] >> (7 - offset)) & 1;
+            payload_bits |= msg_bit << k;
+            input_bits_index += 1;
+        }
+
+        let carrier_bits = *carrier_byte & (0xFF << n_bits);
+        *carrier_byte = carrier_bits | payload_bits;
+    }
 }
 
 fn lsb_decode(image: image::RgbImage, n_bits: u8) {
