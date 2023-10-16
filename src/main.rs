@@ -1,6 +1,7 @@
 mod cipher;
 
-use std::path::Path;
+use inquire::validator::Validation;
+use std::path::{Path, PathBuf};
 
 fn main() {
     let options = vec!["Encode a message", "Decode a message"];
@@ -49,11 +50,9 @@ fn get_bits() -> u8 {
     let n_bits = inquire::Text::new("How many bits to use for LSB?")
         .with_validator(|a: &str| {
             if a.parse::<u8>().unwrap() > 8 {
-                return Ok(inquire::validator::Validation::Invalid(
-                    "Must be between 1 and 8".into(),
-                ));
+                Ok(Validation::Invalid("Must be between 1 and 8".into()))
             } else {
-                return Ok(inquire::validator::Validation::Valid);
+                Ok(Validation::Valid)
             }
         })
         .prompt()
@@ -64,22 +63,19 @@ fn get_bits() -> u8 {
     n_bits
 }
 
-fn get_path() -> String {
+fn get_path() -> PathBuf {
     let image_path = inquire::Text::new("Enter an image path")
-        .with_validator(|mut a: &str| {
-            a = a.trim();
-            if !Path::new(a).exists() {
-                return Ok(inquire::validator::Validation::Invalid(
-                    "File does not exist".into(),
-                ));
+        .with_validator(|a: &str| {
+            if !Path::new(a.trim()).exists() {
+                Ok(Validation::Invalid("File does not exist".into()))
             } else {
-                return Ok(inquire::validator::Validation::Valid);
+                Ok(Validation::Valid)
             }
         })
         .prompt()
         .unwrap();
 
-    image_path.trim().to_string()
+    PathBuf::from(image_path.trim())
 }
 
 fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
@@ -98,32 +94,26 @@ fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
         return;
     }
 
-    // Convert the message to a vector of bits
-    let mut message_bits = Vec::new();
-    for byte in message {
-        for i in 0..8 {
-            message_bits.push((byte >> (7 - i)) & 1);
-        }
-    }
-
     // Write the message to the image
     let mut i = 0;
     for y in 0..image.height() {
         for x in 0..image.width() {
             let pixel = image.get_pixel_mut(x, y);
             for j in 0..3 {
-                if i == message_bits.len() {
+                if i >= message.len() * 8 {
                     break;
                 }
 
                 // Extract n_bits from the message
                 let mut byte = 0;
-                for _ in 0..n_bits {
-                    if i == message_bits.len() {
+                for k in (0..n_bits).rev() {
+                    if i >= message.len() * 8 {
                         break;
                     }
-
-                    byte = (byte << 1) | message_bits[i];
+                    let byte_index = i / 8;
+                    let offset = i % 8;
+                    let msg_bit = (message[byte_index] >> (7 - offset)) & 1;
+                    byte |= msg_bit << k;
                     i += 1;
                 }
 
@@ -143,23 +133,15 @@ fn lsb_decode(image: image::RgbImage, n_bits: u8) {
     let mut message = Vec::new();
     let mut byte = 0;
     let mut bits_read = 0;
-    let mut done = false;
-    for y in 0..image.height() {
+    'decode: for y in 0..image.height() {
         for x in 0..image.width() {
             // Extract bits from the image, stop when a null byte is found
             // 1 pixel may not contain the entire byte, so we need to extract multiple pixels
             let pixel = image.get_pixel(x, y);
 
             for j in 0..3 {
-                if done {
-                    break;
-                }
-
                 // Extract n_bits from the image, but don't go past the end of the byte
-                let mut bits_to_extract = n_bits;
-                if bits_to_extract > 8 - bits_read {
-                    bits_to_extract = 8 - bits_read;
-                }
+                let bits_to_extract = n_bits.min(8 - bits_read);
 
                 // Create a mask to extract the bits
                 let mask = (1 << bits_to_extract) - 1;
@@ -172,7 +154,7 @@ fn lsb_decode(image: image::RgbImage, n_bits: u8) {
                 if bits_read == 8 {
                     message.push(byte);
                     if byte == 0 {
-                        done = true;
+                        break 'decode;
                     }
                     byte = 0;
                     bits_read = 0;

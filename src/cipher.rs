@@ -1,55 +1,57 @@
-pub(crate) fn rot(message: String, n: u8) -> String {
-    message
-        .chars()
-        .map(|c| {
-            if !c.is_ascii_alphabetic() {
-                return c;
-            }
+use std::str;
 
-            let base = if c.is_ascii_uppercase() {
-                'A' as u8
+pub(crate) fn rot(bytes: &mut [u8], n: u8) {
+    for byte in bytes {
+        *byte = byte.wrapping_add(n);
+    }
+}
+
+pub(crate) fn string_rot(message: &mut str, n: u8) {
+    for byte in unsafe { message.as_bytes_mut() } {
+        if byte.is_ascii_alphabetic() {
+            if byte.is_ascii_uppercase() {
+                *byte = (*byte - b'A' + n) % 26 + b'A';
             } else {
-                'a' as u8
-            };
-
-            ((c as u8 - base + n) % 26 + base) as char
-        })
-        .collect()
+                *byte = (*byte - b'a' + n) % 26 + b'a';
+            }
+        }
+    }
+    debug_assert!(str::from_utf8(message.as_bytes()).is_ok());
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::cipher::rot;
+    use crate::cipher::string_rot;
+
+    fn check(message: &str, output: &str, n: u8) {
+        let mut message_copy = message.to_string();
+        string_rot(&mut message_copy, n);
+        assert_eq!(output, &message_copy);
+        string_rot(&mut message_copy, 26 - n);
+        assert_eq!(message, &message_copy);
+    }
 
     #[test]
     fn empty_string() {
-        assert_eq!(rot("".to_string(), 1), "".to_string())
+        check("", "", 1);
     }
 
     #[test]
     fn full_rotate() {
-        assert_eq!(
-            rot("this is a 26 rotate".to_string(), 26),
-            "this is a 26 rotate".to_string()
-        );
+        check("this is a 26 rotate", "this is a 26 rotate", 26);
     }
 
     #[test]
     fn rotate() {
-        assert_eq!(
-            rot(
-                "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM".to_string(),
-                13
-            ),
-            "djreglhvbcnfqstuwxymkpioazDJREGLHVBCNFQSTUWXYMKPIOAZ".to_string()
+        check(
+            "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM",
+            "djreglhvbcnfqstuwxymkpioazDJREGLHVBCNFQSTUWXYMKPIOAZ",
+            13,
         );
     }
 
     #[test]
     fn special_chars() {
-        assert_eq!(
-            rot("1234567890!@#$%^&*()_+-=".to_string(), 13),
-            "1234567890!@#$%^&*()_+-=".to_string()
-        );
+        check("1234567890!@#$%^&*()_+-=", "1234567890!@#$%^&*()_+-=", 1)
     }
 }
