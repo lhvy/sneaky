@@ -14,32 +14,37 @@ pub fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
         return;
     }
 
-    lsb_raw_encode(&message, image.as_flat_samples_mut().as_mut_slice(), n_bits);
+    lsb_raw_encode(
+        &message,
+        image.as_flat_samples_mut().as_mut_slice(),
+        n_bits as usize,
+    );
 
     // Save the image
     image.save("out.png").unwrap();
     println!("Saved image to ./out.png");
 }
 
-pub fn lsb_raw_encode(payload: &[u8], carrier: &mut [u8], n_bits: u8) {
-    let mut input_bits_index: usize = 0;
+pub fn lsb_raw_encode(payload: &[u8], carrier: &mut [u8], n_bits: usize) {
+    let mut payload_bit_index: usize = 0;
     for carrier_byte in carrier {
-        if input_bits_index >= payload.len() * 8 {
+        if payload_bit_index >= payload.len() * 8 {
             break;
         }
 
-        // Extract n_bits from the carrier byte
-        let mut payload_bits = 0;
-        for k in (0..n_bits).rev() {
-            if input_bits_index >= payload.len() * 8 {
-                break;
-            }
-            let byte_index = input_bits_index / 8;
-            let offset = input_bits_index % 8;
-            let msg_bit = (payload[byte_index] >> (7 - offset)) & 1;
-            payload_bits |= msg_bit << k;
-            input_bits_index += 1;
+        let payload_byte_index = payload_bit_index / 8;
+        let offset = payload_bit_index % 8;
+        let mut payload_bytes: u16 =
+            (unsafe { *payload.get_unchecked(payload_byte_index) } as u16) << 8;
+        if (payload_byte_index + 1) < payload.len() {
+            payload_bytes |= unsafe { *payload.get_unchecked(payload_byte_index + 1) } as u16;
         }
+
+        let mask = (1 << n_bits) - 1;
+        let shift_amount = 16 - n_bits - offset;
+
+        let payload_bits = (payload_bytes >> shift_amount) as u8 & mask;
+        payload_bit_index += n_bits;
 
         let carrier_bits = *carrier_byte & (0xFF << n_bits);
         *carrier_byte = carrier_bits | payload_bits;

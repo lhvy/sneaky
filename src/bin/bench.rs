@@ -9,7 +9,7 @@ fn main() {
 
     const TESTS: usize = 500;
 
-    for n in 0..=8 {
+    for n in 1..=8 {
         let time = std::time::Instant::now();
         for _ in 0..TESTS {
             lsb_raw_encode(&payload, &mut carrier, n);
