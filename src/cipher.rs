@@ -7,7 +7,12 @@ pub(crate) fn rot(bytes: &mut [u8], n: u8) {
 }
 
 pub(crate) fn string_rot(message: &mut str, n: u8) {
-    for byte in unsafe { message.as_bytes_mut() } {
+    alphabetic_rot(unsafe { message.as_bytes_mut() }, n);
+    debug_assert!(str::from_utf8(message.as_bytes()).is_ok());
+}
+
+pub(crate) fn alphabetic_rot(bytes: &mut [u8], n: u8) {
+    for byte in bytes {
         if byte.is_ascii_alphabetic() {
             if byte.is_ascii_uppercase() {
                 *byte = (*byte - b'A' + n) % 26 + b'A';
@@ -16,7 +21,6 @@ pub(crate) fn string_rot(message: &mut str, n: u8) {
             }
         }
     }
-    debug_assert!(str::from_utf8(message.as_bytes()).is_ok());
 }
 
 #[cfg(test)]

@@ -17,7 +17,7 @@ fn main() {
 }
 
 fn encode() {
-    let message = inquire::Text::new("Enter a message").prompt().unwrap();
+    let mut message = inquire::Text::new("Enter a message").prompt().unwrap();
 
     let options = vec!["Encode using LSB in an image", "Encode using a ROT cipher"];
     let choice = inquire::Select::new("Select an option", options)
@@ -32,17 +32,52 @@ fn encode() {
             lsb_encode(message, image, n_bits);
         }
         "Encode using a ROT cipher" => {
-            // let rotation = inquire::Text::new("Enter a rotation");
+            // input any integer
+            let n = get_string_rot_n();
+            cipher::string_rot(&mut message, n);
+            println!("Message: {}", message);
         }
         _ => panic!("Invalid option"),
     }
 }
 
 fn decode() {
-    let image_path = get_path();
-    let image = image::open(image_path).unwrap().to_rgb8();
-    let n_bits = get_bits();
-    lsb_decode(image, n_bits);
+    let options = vec!["Decode text", "Decode a file"];
+    let choice = inquire::Select::new("Select an option", options)
+        .prompt()
+        .unwrap();
+
+    let mut bytes = match choice {
+        "Decode text" => inquire::Text::new("Enter a message")
+            .prompt()
+            .unwrap()
+            .into_bytes(),
+        "Decode a file" => {
+            let path = get_path();
+            std::fs::read(path).unwrap()
+        }
+        _ => panic!("Invalid option"),
+    };
+
+    let options = vec!["Decode using LSB in an image", "Decode using a ROT cipher"];
+    let choice = inquire::Select::new("Select an option", options)
+        .prompt()
+        .unwrap();
+
+    match choice {
+        "Decode using LSB in an image" => {
+            let image_path = get_path();
+            let image = image::open(image_path).unwrap().to_rgb8();
+            let n_bits = get_bits();
+            lsb_decode(image, n_bits);
+        }
+        "Decode using a ROT cipher" => {
+            let n = get_string_rot_n();
+            cipher::alphabetic_rot(&mut bytes, 26 - n);
+            println!("Message: {}", String::from_utf8_lossy(&bytes));
+        }
+        _ => panic!("Invalid option"),
+    }
 }
 
 fn get_bits() -> u8 {
@@ -76,6 +111,25 @@ fn get_path() -> PathBuf {
         .unwrap();
 
     PathBuf::from(image_path.trim())
+}
+
+fn get_string_rot_n() -> u8 {
+    inquire::Text::new("How many characters to rotate by?")
+        .with_validator(|a: &str| {
+            if let Ok(n) = a.parse::<u8>() {
+                if n > 26 {
+                    Ok(Validation::Invalid("Must be between 0 and 26".into()))
+                } else {
+                    Ok(Validation::Valid)
+                }
+            } else {
+                Ok(Validation::Invalid("Must be an integer".into()))
+            }
+        })
+        .prompt()
+        .unwrap()
+        .parse::<u8>()
+        .unwrap()
 }
 
 fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
