@@ -1,4 +1,7 @@
-pub fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
+use rand::seq::SliceRandom;
+use rand::SeedableRng;
+
+pub fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8, key: Option<u64>) {
     // Convert the message to a vector of bytes
     let mut message = message.as_bytes().to_vec();
     // Add another byte for optimisation purposes (required or data will be lost 💀)
@@ -14,11 +17,31 @@ pub fn lsb_encode(message: String, mut image: image::RgbImage, n_bits: u8) {
         return;
     }
 
-    lsb_raw_encode(
-        &message,
-        image.as_flat_samples_mut().as_mut_slice(),
-        n_bits as usize,
-    );
+    let flat_image = &mut image.as_flat_samples_mut();
+    let carrier = flat_image.as_mut_slice();
+
+    match key {
+        Some(key) => {
+            let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(key);
+
+            let mut index_map = (0..carrier.len()).collect::<Vec<_>>();
+            index_map.shuffle(&mut rng);
+
+            let mut shuffled_carrier = Vec::with_capacity(carrier.len());
+            for i in &index_map {
+                shuffled_carrier.push(carrier[*i]);
+            }
+
+            lsb_raw_encode(&message, &mut shuffled_carrier, n_bits as usize);
+
+            for (i, shuffled_carrier) in index_map.into_iter().zip(shuffled_carrier) {
+                carrier[i] = shuffled_carrier;
+            }
+        }
+        None => {
+            lsb_raw_encode(&message, carrier, n_bits as usize);
+        }
+    }
 
     // Save the image
     image.save("out.png").unwrap();
@@ -60,9 +83,21 @@ pub fn lsb_raw_encode(payload: &[u8], carrier: &mut [u8], n_bits: usize) {
     }
 }
 
-pub fn lsb_decode(image: image::RgbImage, n_bits: u8) {
+pub fn lsb_decode(image: image::RgbImage, n_bits: u8, key: Option<u64>) {
     // Decode the message from the image
-    let message = lsb_raw_decode(image.as_flat_samples().as_slice(), n_bits as usize);
+    let message = match key {
+        Some(key) => {
+            let mut rng = rand_chacha::ChaCha8Rng::seed_from_u64(key);
+
+            let flat_image = image.as_flat_samples();
+            let mut carrier = flat_image.as_slice().to_vec();
+
+            carrier.shuffle(&mut rng);
+
+            lsb_raw_decode(&carrier, n_bits as usize)
+        }
+        None => lsb_raw_decode(image.as_flat_samples().as_slice(), n_bits as usize),
+    };
 
     // Convert the message to a string
     let message = String::from_utf8(message).unwrap();

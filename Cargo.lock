@@ -540,6 +540,7 @@ dependencies = [
  "image",
  "inquire",
  "rand",
+ "rand_chacha",
 ]
 
 [[package]]

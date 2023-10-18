@@ -2,6 +2,7 @@ mod cipher;
 
 use inquire::validator::Validation;
 use sneaky::{lsb_decode, lsb_encode};
+use std::ops::BitXor;
 use std::path::{Path, PathBuf};
 
 fn main() {
@@ -30,7 +31,8 @@ fn encode() {
             let image_path = get_path();
             let image = image::open(image_path).unwrap().to_rgb8();
             let n_bits = get_bits();
-            lsb_encode(message, image, n_bits);
+
+            lsb_encode(message, image, n_bits, gen_seed());
         }
         "Encode using a ROT cipher" => {
             // input any integer
@@ -69,7 +71,7 @@ fn decode() {
         "Decode as an image using LSB" => {
             let image = image::load_from_memory(&bytes).unwrap().to_rgb8();
             let n_bits = get_bits();
-            lsb_decode(image, n_bits);
+            lsb_decode(image, n_bits, gen_seed());
         }
         "Decode using a ROT cipher" => {
             let n = get_string_rot_n();
@@ -111,6 +113,34 @@ fn get_path() -> PathBuf {
         .unwrap();
 
     PathBuf::from(image_path.trim())
+}
+
+fn get_password() -> Option<String> {
+    // Would the user like to use a password?
+    let password = inquire::Confirm::new("Would you like to use a password?")
+        .with_default(false)
+        .prompt()
+        .unwrap();
+
+    if password {
+        let password = inquire::Text::new("Enter a password").prompt().unwrap();
+        Some(password)
+    } else {
+        None
+    }
+}
+
+fn gen_seed() -> Option<u64> {
+    let password = get_password()?;
+
+    // https://nnethercote.github.io/2021/12/08/a-brutally-effective-hash-function-in-rust.html
+    const K: u64 = 0x517cc1b727220a95;
+    let mut hash: u64 = 0;
+    for b in password.as_bytes() {
+        hash = hash.rotate_left(5).bitxor(*b as u64).wrapping_mul(K);
+    }
+
+    Some(hash)
 }
 
 fn get_string_rot_n() -> u8 {
