@@ -60,13 +60,13 @@ fn decode() {
         _ => panic!("Invalid option"),
     };
 
-    let options = vec!["Decode using LSB in an image", "Decode using a ROT cipher"];
+    let options = vec!["Decode as an image using LSB", "Decode using a ROT cipher"];
     let choice = inquire::Select::new("Select an option", options)
         .prompt()
         .unwrap();
 
     match choice {
-        "Decode using LSB in an image" => {
+        "Decode as an image using LSB" => {
             let image = image::load_from_memory(&bytes).unwrap().to_rgb8();
             let n_bits = get_bits();
             lsb_decode(image, n_bits);
@@ -99,7 +99,7 @@ fn get_bits() -> u8 {
 }
 
 fn get_path() -> PathBuf {
-    let image_path = inquire::Text::new("Enter an image path")
+    let image_path = inquire::Text::new("Enter a file path")
         .with_validator(|a: &str| {
             if !Path::new(a.trim()).exists() {
                 Ok(Validation::Invalid("File does not exist".into()))
