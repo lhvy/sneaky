@@ -1,7 +1,7 @@
 mod cipher;
 
 use inquire::validator::Validation;
-use sneaky::{lsb_decode, lsb_encode};
+use sneaky::{bytes_to_wav, lsb_decode, lsb_encode, wav_to_bytes};
 use std::ops::BitXor;
 use std::path::{Path, PathBuf};
 
@@ -21,7 +21,11 @@ fn main() {
 fn encode() {
     let mut message = inquire::Text::new("Enter a message").prompt().unwrap();
 
-    let options = vec!["Encode using LSB in an image", "Encode using a ROT cipher"];
+    let options = vec![
+        "Encode using LSB in an image",
+        "Encode using FSK to a wav",
+        "Encode using a ROT cipher",
+    ];
     let choice = inquire::Select::new("Select an option", options)
         .prompt()
         .unwrap();
@@ -33,6 +37,9 @@ fn encode() {
             let n_bits = get_bits();
 
             lsb_encode(message, image, n_bits, gen_seed());
+        }
+        "Encode using FSK to a wav" => {
+            bytes_to_wav(message.as_bytes());
         }
         "Encode using a ROT cipher" => {
             // input any integer
@@ -62,7 +69,11 @@ fn decode() {
         _ => panic!("Invalid option"),
     };
 
-    let options = vec!["Decode as an image using LSB", "Decode using a ROT cipher"];
+    let options = vec![
+        "Decode as an image using LSB",
+        "Decode using FSK from a wav",
+        "Decode using a ROT cipher",
+    ];
     let choice = inquire::Select::new("Select an option", options)
         .prompt()
         .unwrap();
@@ -72,6 +83,10 @@ fn decode() {
             let image = image::load_from_memory(&bytes).unwrap().to_rgb8();
             let n_bits = get_bits();
             lsb_decode(image, n_bits, gen_seed());
+        }
+        "Decode using FSK from a wav" => {
+            let bytes = wav_to_bytes(&bytes);
+            println!("Message: {}", String::from_utf8_lossy(&bytes));
         }
         "Decode using a ROT cipher" => {
             let n = get_string_rot_n();
