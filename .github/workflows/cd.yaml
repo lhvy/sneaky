@@ -33,26 +33,26 @@ jobs:
             cargo build --release --target $target
           done
 
-      - name: Upload Linux archive
+      - name: Upload Linux binary
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.RELEASE_BIN }}-linux-x86_64
           path: ./target/x86_64-unknown-linux-gnu/release/${{ env.RELEASE_BIN }}
         if: matrix.os == 'ubuntu-latest'
 
-      - name: Upload Windows archive
+      - name: Upload Windows binary
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.RELEASE_BIN }}-windows-x86_64.exe
-          path: /target/x86_64-pc-windows-msvc/release/${{ env.RELEASE_BIN }}.exe
+          path: ./target/x86_64-pc-windows-msvc/release/${{ env.RELEASE_BIN }}.exe
         if: matrix.os == 'windows-latest'
 
-      - name: Create macOS archive
+      - name: Create macOS binary
         run: |
           lipo -create -output ./${{ env.RELEASE_BIN }}-mac-universal ./target/x86_64-apple-darwin/release/${{ env.RELEASE_BIN }} ./target/aarch64-apple-darwin/release/${{ env.RELEASE_BIN }}
         if: matrix.os == 'macos-latest'
 
-      - name: Upload macOS archive
+      - name: Upload macOS binary
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.RELEASE_BIN }}-mac-universal
