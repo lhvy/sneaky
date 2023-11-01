@@ -16,6 +16,12 @@ fn main() {
         "Decode a message" => decode(),
         _ => panic!("Invalid option"),
     }
+
+    // Ask for confirmation before closing
+    inquire::Confirm::new("Press enter to exit")
+        .with_default(true)
+        .prompt()
+        .unwrap();
 }
 
 fn encode() {
