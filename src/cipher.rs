@@ -1,10 +1,10 @@
 use std::str;
 
-pub(crate) fn rot(bytes: &mut [u8], n: u8) {
-    for byte in bytes {
-        *byte = byte.wrapping_add(n);
-    }
-}
+// pub(crate) fn rot(bytes: &mut [u8], n: u8) {
+//     for byte in bytes {
+//         *byte = byte.wrapping_add(n);
+//     }
+// }
 
 pub(crate) fn string_rot(message: &mut str, n: u8) {
     alphabetic_rot(unsafe { message.as_bytes_mut() }, n);
