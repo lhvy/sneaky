@@ -1,12 +1,12 @@
 mod cipher;
 
 use inquire::validator::Validation;
-use sneaky::{bytes_to_wav, lsb_decode, lsb_encode, wav_to_bytes};
+use sneaky::{bytes_to_wav, extract_bit_planes, lsb_decode, lsb_encode, wav_to_bytes};
 use std::ops::BitXor;
 use std::path::{Path, PathBuf};
 
 fn main() {
-    let options = vec!["Encode a message", "Decode a message"];
+    let options = vec!["Encode a message", "Decode a message", "Analyse a file"];
     let choice = inquire::Select::new("Select an option", options)
         .prompt()
         .unwrap();
@@ -14,6 +14,7 @@ fn main() {
     match choice {
         "Encode a message" => encode(),
         "Decode a message" => decode(),
+        "Analyse a file" => analyse(),
         _ => panic!("Invalid option"),
     }
 
@@ -98,6 +99,22 @@ fn decode() {
             let n = get_string_rot_n();
             cipher::alphabetic_rot(&mut bytes, 26 - n);
             println!("Message: {}", String::from_utf8_lossy(&bytes));
+        }
+        _ => panic!("Invalid option"),
+    }
+}
+
+fn analyse() {
+    let options = vec!["Analyse an image"];
+    let choice = inquire::Select::new("Select an option", options)
+        .prompt()
+        .unwrap();
+
+    match choice {
+        "Analyse an image's bit planes" => {
+            let image_path = get_path();
+            let image = image::open(image_path).unwrap().to_rgb8();
+            extract_bit_planes(image);
         }
         _ => panic!("Invalid option"),
     }

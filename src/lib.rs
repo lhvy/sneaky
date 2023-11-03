@@ -149,6 +149,41 @@ pub fn lsb_raw_decode(carrier: &[u8], n_bits: usize) -> Vec<u8> {
     payload
 }
 
+pub fn extract_bit_planes(image: image::RgbImage) {
+    let mut planes = Vec::new();
+    for i in 0..8 {
+        for j in 0..3 {
+            let mut plane = image.clone();
+            for pixel in plane.pixels_mut() {
+                pixel[j] = (pixel[j] & (1 << i)) * 255;
+                for k in 0..3 {
+                    if k != j {
+                        pixel[k] = 0;
+                    }
+                }
+            }
+            planes.push(plane);
+        }
+    }
+
+    // Save into output folder, labelled R, G, B 0-7
+    // Folder first
+    std::fs::create_dir_all("output").unwrap();
+    // Then save the images
+    for (i, plane) in planes.into_iter().enumerate() {
+        let color = match i % 3 {
+            0 => "R",
+            1 => "G",
+            2 => "B",
+            _ => unreachable!(),
+        };
+        plane
+            .save(format!("output/{}{}.png", color, i / 3))
+            .unwrap();
+    }
+    println!("Saved images to ./output");
+}
+
 pub fn bytes_to_wav(bytes: &[u8]) {
     let spec = hound::WavSpec {
         channels: 1,
