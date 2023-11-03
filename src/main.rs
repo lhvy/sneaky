@@ -105,7 +105,7 @@ fn decode() {
 }
 
 fn analyse() {
-    let options = vec!["Analyse an image"];
+    let options = vec!["Analyse an image's bit planes"];
     let choice = inquire::Select::new("Select an option", options)
         .prompt()
         .unwrap();
