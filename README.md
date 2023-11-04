@@ -13,7 +13,8 @@ The image LSB feature is able to store arbitrary data in an RGB image, along wit
     </tr>
 </tbody></table>
 
-Note: 8-bit encoding is supported, but benchmark graphs were [not very useful](https://raw.githubusercontent.com/lhvy/i/master/sneaky-encoding-8.png).
+> **Note**
+> These benchmarks were run on an M1 MacBook Pro. 8-bit encoding is supported, but benchmark graphs were [not very useful](https://raw.githubusercontent.com/lhvy/i/master/sneaky-encoding-8.png).
 
 ### Where?
 
