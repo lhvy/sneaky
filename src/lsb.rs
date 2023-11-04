@@ -60,6 +60,11 @@ pub fn raw_encode(payload: &[u8], carrier: &mut [u8], n_bits: usize) {
 
     let len = len as usize;
 
+    if n_bits == 8 && len <= carrier.len() - 32 {
+        carrier[32..32 + len].copy_from_slice(&payload[..len]);
+        return;
+    }
+
     let mut payload_bit_index: usize = 0;
     for carrier_byte in &mut carrier[32..] {
         if payload_bit_index >= len * 8 {
@@ -111,6 +116,10 @@ pub fn raw_decode(carrier: &[u8], n_bits: usize) -> Vec<u8> {
     for (i, byte) in carrier[..32].iter().enumerate() {
         let bit = (*byte & 1) as usize;
         len |= bit << i;
+    }
+
+    if n_bits == 8 {
+        return carrier[32..32 + len].to_vec();
     }
 
     // Decode the message from the image
