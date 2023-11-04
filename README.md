@@ -6,6 +6,15 @@ A general purpose steganography tool written in Rust (🦀). This is an educatio
 
 The image LSB feature is able to store arbitrary data in an RGB image, along with encryption/randomisation of the data using a user-inputted password to mitigate against steganalysis and brute-forcing. On top of this, the LSB encoding/decoding process was rewritten several times and been benchmarked against a [popular steganography library](https://github.com/ragibson/Steganography) that uses NumPy (a highly optimised C library). This Rust tool is significantly faster for both encoding and decoding. Note, you can run the benchmarks yourself by running `cargo run --bin bench --release`.
 
+<table><tbody align="center">
+    <tr>
+        <td><img src=https://raw.githubusercontent.com/lhvy/i/master/sneaky-encoding-7.png></td>
+        <td><img src=https://raw.githubusercontent.com/lhvy/i/master/sneaky-decoding-7.png></td>
+    </tr>
+</tbody></table>
+
+Note: 8-bit encoding is supported, but benchmark graphs were [not very useful](https://raw.githubusercontent.com/lhvy/i/master/sneaky-encoding-8.png).
+
 ### Where?
 
 You can find the latest releases for Windows, Linux and macOS (universal binary) [here](https://nightly.link/lhvy/sneaky/workflows/cd.yaml/master). Don't forget to `chmod +x` on macOS or Linux!
