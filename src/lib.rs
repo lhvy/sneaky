@@ -1,3 +1,4 @@
+use image::ImageBuffer;
 use rand::seq::SliceRandom;
 use rand::SeedableRng;
 
@@ -150,19 +151,21 @@ pub fn lsb_raw_decode(carrier: &[u8], n_bits: usize) -> Vec<u8> {
 }
 
 pub fn extract_bit_planes(image: image::RgbImage) {
-    let mut planes = Vec::new();
-    for i in 0..8 {
-        for j in 0..3 {
-            let mut plane = image.clone();
-            for pixel in plane.pixels_mut() {
-                pixel[j] = (pixel[j] & (1 << i)) * 255;
-                for k in 0..3 {
-                    if k != j {
-                        pixel[k] = 0;
-                    }
-                }
+    let mut planes = vec![ImageBuffer::new(image.width(), image.height()); 24].into_boxed_slice();
+    let mut plane_pixels = planes
+        .iter_mut()
+        .map(|p| p.pixels_mut())
+        .collect::<Vec<_>>();
+    for src in image.pixels() {
+        for channel in 0..3 {
+            for bit in 0..8 {
+                let dst = plane_pixels[channel * 8 + bit].next().unwrap();
+                *dst = if src[channel] & (1 << bit) == 0 {
+                    image::Luma([255_u8])
+                } else {
+                    image::Luma([0])
+                };
             }
-            planes.push(plane);
         }
     }
 
@@ -170,15 +173,15 @@ pub fn extract_bit_planes(image: image::RgbImage) {
     // Folder first
     std::fs::create_dir_all("output").unwrap();
     // Then save the images
-    for (i, plane) in planes.into_iter().enumerate() {
-        let color = match i % 3 {
+    for (i, plane) in planes.iter().enumerate() {
+        let color = match i / 8 {
             0 => "R",
             1 => "G",
             2 => "B",
             _ => unreachable!(),
         };
         plane
-            .save(format!("output/{}{}.png", color, i / 3))
+            .save(format!("output/{}{}.png", color, i % 8))
             .unwrap();
     }
     println!("Saved images to ./output");
