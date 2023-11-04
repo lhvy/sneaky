@@ -1,7 +1,5 @@
-mod cipher;
-
 use inquire::validator::Validation;
-use sneaky::{bytes_to_wav, extract_bit_planes, lsb_decode, lsb_encode, wav_to_bytes};
+use sneaky::{cipher, lsb, wav};
 use std::ops::BitXor;
 use std::path::{Path, PathBuf};
 
@@ -43,10 +41,10 @@ fn encode() {
             let image = image::open(image_path).unwrap().to_rgb8();
             let n_bits = get_bits();
 
-            lsb_encode(message, image, n_bits, gen_seed());
+            lsb::encode(message, image, n_bits, gen_seed());
         }
         "Encode using FSK to a wav" => {
-            bytes_to_wav(message.as_bytes());
+            wav::from_bytes(message.as_bytes());
         }
         "Encode using a ROT cipher" => {
             // input any integer
@@ -89,10 +87,10 @@ fn decode() {
         "Decode as an image using LSB" => {
             let image = image::load_from_memory(&bytes).unwrap().to_rgb8();
             let n_bits = get_bits();
-            lsb_decode(image, n_bits, gen_seed());
+            lsb::decode(image, n_bits, gen_seed());
         }
         "Decode using FSK from a wav" => {
-            let bytes = wav_to_bytes(&bytes);
+            let bytes = wav::to_bytes(&bytes);
             println!("Message: {}", String::from_utf8_lossy(&bytes));
         }
         "Decode using a ROT cipher" => {
@@ -114,7 +112,7 @@ fn analyse() {
         "Analyse an image's bit planes" => {
             let image_path = get_path();
             let image = image::open(image_path).unwrap().to_rgb8();
-            extract_bit_planes(image);
+            lsb::extract_bit_planes(image);
         }
         _ => panic!("Invalid option"),
     }

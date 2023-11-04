@@ -1,5 +1,4 @@
 use rand::RngCore;
-use sneaky::{lsb_raw_decode, lsb_raw_encode};
 
 fn main() {
     let mut payload = vec![0u8; 1000 * 1000];
@@ -16,7 +15,7 @@ fn main() {
         let time = std::time::Instant::now();
         for _ in 0..TESTS {
             #[allow(clippy::unit_arg)]
-            std::hint::black_box(lsb_raw_encode(&payload, &mut carrier, n));
+            std::hint::black_box(sneaky::lsb::raw_encode(&payload, &mut carrier, n));
         }
         let elapsed = time.elapsed().as_secs_f64();
         let processed = payload.len() as f64 * TESTS as f64 / (1000.0 * 1000.0);
@@ -27,7 +26,7 @@ fn main() {
     for n in 1..=8 {
         let time = std::time::Instant::now();
         for _ in 0..TESTS {
-            std::hint::black_box(lsb_raw_decode(&carrier, n));
+            std::hint::black_box(sneaky::lsb::raw_decode(&carrier, n));
         }
         let elapsed = time.elapsed().as_secs_f64();
         let processed = payload.len() as f64 * TESTS as f64 / (1000.0 * 1000.0);
