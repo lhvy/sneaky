@@ -1,5 +1,5 @@
 use inquire::validator::Validation;
-use sneaky::{cipher, lsb, wav};
+use sneaky::{binary, cipher, lsb, wav};
 use std::ops::BitXor;
 use std::path::{Path, PathBuf};
 
@@ -30,6 +30,7 @@ fn encode() {
         "Encode using LSB in an image",
         "Encode using FSK to a wav",
         "Encode using a ROT cipher",
+        "Encode into a Mach-O binary",
     ];
     let choice = inquire::Select::new("Select an option", options)
         .prompt()
@@ -51,6 +52,15 @@ fn encode() {
             let n = get_string_rot_n();
             cipher::string_rot(&mut message, n);
             println!("Message: {}", message);
+        }
+        "Encode into a Mach-O binary" => {
+            let path = get_path();
+            binary::inject_string(
+                path.to_str().unwrap(),
+                message.as_bytes(),
+                &format!("{}-out", path.display()),
+            );
+            println!("Saved to {}-out", path.display());
         }
         _ => panic!("Invalid option"),
     }
@@ -78,6 +88,7 @@ fn decode() {
         "Decode as an image using LSB",
         "Decode using FSK from a wav",
         "Decode using a ROT cipher",
+        "Decode from a Mach-O binary",
     ];
     let choice = inquire::Select::new("Select an option", options)
         .prompt()
@@ -97,6 +108,13 @@ fn decode() {
             let n = get_string_rot_n();
             cipher::alphabetic_rot(&mut bytes, 26 - n);
             println!("Message: {}", String::from_utf8_lossy(&bytes));
+        }
+        "Decode from a Mach-O binary" => {
+            let bytes = binary::extract_string(&bytes);
+            println!(
+                "Message: {}",
+                String::from_utf8_lossy(bytes.unwrap().as_slice())
+            );
         }
         _ => panic!("Invalid option"),
     }

@@ -6,6 +6,7 @@ name = "sneaky"
 version = "0.1.0"
 
 [dependencies]
+goblin = "0.7.1"
 hound = "3.5.1"
 image = "0.24.7"
 inquire = "0.6.2"
